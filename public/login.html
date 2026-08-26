@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login - Aplicacao Exemplo</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 420px; margin: 60px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 1.4rem; }
+  nav a { margin-right: 12px; }
+  label { display: block; margin-top: 12px; font-weight: bold; }
+  input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+  button { margin-top: 16px; padding: 8px 16px; cursor: pointer; }
+  .mensagem-erro { color: #b00020; margin-top: 12px; min-height: 1.2em; }
+  .mensagem-sucesso { color: #0a7a0a; margin-top: 12px; min-height: 1.2em; }
+</style>
+</head>
+<body>
+  <h1>Login</h1>
+  <nav>
+    <a href="/login">Login</a>
+    <a href="/cadastro">Cadastro</a>
+  </nav>
+
+  <p id="sucesso-login" class="mensagem-sucesso">{{SUCCESS_TEXT}}</p>
+  <p id="erro-login" class="mensagem-erro">{{ERROR_TEXT}}</p>
+
+  <form id="form-login" method="POST" action="/login">
+    <label for="username">Usuario</label>
+    <input type="text" id="username" name="username" value="{{USERNAME_VALUE}}" autocomplete="username" required>
+
+    <label for="password">Senha</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+    <button type="submit" id="submit">Entrar</button>
+  </form>
+</body>
+</html>
