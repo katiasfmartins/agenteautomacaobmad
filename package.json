@@ -4,7 +4,8 @@
   "description": "Aplicacao-exemplo minima (Node.js + Express) usada como alvo de testes pela Suite Piloto Playwright.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "playwright test"
   },
   "engines": {
     "node": ">=22"
@@ -12,6 +13,9 @@
   "dependencies": {
     "express": "^4.19.2",
     "express-session": "^1.18.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0"
   },
   "license": "UNLICENSED",
   "private": true

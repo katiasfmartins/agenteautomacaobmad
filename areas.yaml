@@ -1,0 +1,9 @@
+# Taxonomia canonica de Area (AD-1) -- lista plana de IDs kebab-case,
+# sem aninhamento nem metadados no MVP. A Analise de Area so pode devolver
+# IDs deste arquivo, ou o sentinela reservado "area-desconhecida" (Epic 2).
+# Cada teste da Suite Piloto (Story 1.3) e marcado com um ou mais destes IDs.
+# Fluxos definidos pela aplicacao-exemplo (Story 1.1, AD-11).
+
+- login
+- cadastro
+- listagem
