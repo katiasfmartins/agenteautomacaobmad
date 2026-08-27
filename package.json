@@ -6,12 +6,14 @@
   "scripts": {
     "start": "node server.js",
     "test": "playwright test",
+    "test:unit": "node --test agent/*.test.ts",
     "postinstall": "playwright install chromium"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "express": "^4.19.2",
     "express-session": "^1.18.0"
   },

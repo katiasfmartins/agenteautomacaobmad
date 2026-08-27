@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -29,5 +31,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run unit tests (agent/*.test.ts)
+        run: npm run test:unit
+
       - name: Run orchestrator
         run: node agent/orchestrator.ts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

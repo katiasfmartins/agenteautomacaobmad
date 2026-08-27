@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "v1",
+  "tool": {
+    "name": "area_analysis",
+    "description": "Registra o resultado da Analise de Area para o diff de uma Pull Request. Devolve a lista de IDs de area (areas.yaml) que o diff afeta. Cada ID deve ser um dos IDs conhecidos ou o sentinela reservado 'area-desconhecida' (usado quando parte do diff nao corresponde a nenhuma area conhecida). Nunca invente um ID que nao esteja na lista de areas conhecidas fornecida no prompt. Uma lista vazia e uma resposta valida quando o diff nao afeta nenhuma area (ex.: apenas documentacao).",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "areas": {
+          "type": "array",
+          "description": "IDs de area (kebab-case) afetados pelo diff, na ordem em que foram identificados. Pode ser uma lista vazia. Use 'area-desconhecida' para partes do diff que nao correspondem a nenhuma area conhecida.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["areas"]
+    }
+  }
+}
