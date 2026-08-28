@@ -71,11 +71,14 @@ step "Run orchestrator" do workflow falha ao chamar o modelo.
 | `agent/llm-client.ts` | Cliente unico do Claude -- tool-use com schema versionado (`agent/schemas/`), client injetavel, log de tokens/schema por chamada |
 | `agent/area-analysis.ts` | Analisa o diff via LLM e valida cada ID de area retornado contra `areas.yaml` real |
 | `agent/test-selection.ts` | Casa areas identificadas com a tag `@area` de cada `tests/*.spec.ts` (deterministico, sem chamada ao modelo) |
-| `agent/orchestrator.ts` | Ponto de entrada: obtem o diff da PR (`git diff base...head`) e encadeia os dois estagios acima |
+| `agent/test-runner.ts` | Roda o subconjunto selecionado via Playwright (nunca a suite inteira) e garante evidencia completa (screenshot/video/trace + `results.json`) |
+| `agent/orchestrator.ts` | Ponto de entrada: obtem o diff da PR (`git diff base...head`) e encadeia os tres estagios acima (analise -> selecao -> execucao) |
 
-Testes unitarios (`node:test`, sem rede/API real -- usam dependencia
-injetada) rodam com `npm run test:unit`, tanto localmente quanto como um
-step do workflow antes de "Run orchestrator".
+Testes unitarios rodam com `npm run test:unit` (`node:test`), tanto
+localmente quanto como um step do workflow antes de "Run orchestrator".
+`llm-client`/`area-analysis`/`test-selection`/`orchestrator` usam dependencia
+injetada e nunca tocam rede/API real; `agent/test-runner.test.ts` e excecao --
+roda contra a aplicacao-exemplo local e o Playwright de verdade.
 
 ## Observacoes
 

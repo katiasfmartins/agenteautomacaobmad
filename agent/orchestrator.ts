@@ -39,6 +39,11 @@ import { analyzeAreas } from './area-analysis.ts';
 import { selectTests } from './test-selection.ts';
 import { runTests } from './test-runner.ts';
 
+// Só roda o pipeline quando este arquivo e o entry point do processo (`node
+// agent/orchestrator.ts`) -- nunca como efeito colateral de outro modulo
+// importar as funcoes puras exportadas aqui (ex.: orchestrator.test.ts).
+const IS_ENTRY_POINT = process.argv[1] === fileURLToPath(import.meta.url);
+
 const CURRENT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(CURRENT_DIR, '..');
 const AREAS_FILE_PATH = join(REPO_ROOT, 'areas.yaml');
@@ -200,13 +205,15 @@ async function main(): Promise<void> {
   );
 }
 
-main().catch((error: unknown) => {
-  console.error(
-    JSON.stringify({
-      event: 'orchestrator_failed',
-      error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString(),
-    }),
-  );
-  process.exitCode = 1;
-});
+if (IS_ENTRY_POINT) {
+  main().catch((error: unknown) => {
+    console.error(
+      JSON.stringify({
+        event: 'orchestrator_failed',
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      }),
+    );
+    process.exitCode = 1;
+  });
+}
