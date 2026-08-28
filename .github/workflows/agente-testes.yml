@@ -2,7 +2,7 @@ name: Agente de Testes
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize]
     branches: [main]
 
 concurrency:
@@ -16,7 +16,7 @@ permissions:
 jobs:
   agente-testes:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -61,6 +62,7 @@ jobs:
         run: node agent/orchestrator.ts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Upload do artefato e responsabilidade do workflow YAML, nunca de
       # `test-runner.ts` (AD-3, pureza de I/O). `if: always()` garante que a

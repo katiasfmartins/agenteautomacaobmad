@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { resolveRunContext, readPullRequestShas, getDiff } from './orchestrator.ts';
+import { resolveRunContext, readPullRequestShas, getDiff, parseGithubRepository, buildRunUrl } from './orchestrator.ts';
 
 // Dois primeiros commits reais da historia do repositorio-piloto (ordem
 // cronologica). Fixados por SHA completo para o teste de `getDiff` ser
@@ -53,9 +53,10 @@ test('resolveRunContext: apenas GITHUB_RUN_ATTEMPT presente (sem RUN_ID) -> fall
   assert.equal(result.source, 'local-fallback');
 });
 
-test('readPullRequestShas: payload valido -> shas corretos', () => {
+test('readPullRequestShas: payload valido -> shas e number corretos', () => {
   const eventPath = writeEventFile({
     pull_request: {
+      number: 42,
       base: { sha: FIRST_COMMIT },
       head: { sha: SECOND_COMMIT },
     },
@@ -63,9 +64,38 @@ test('readPullRequestShas: payload valido -> shas corretos', () => {
 
   const result = readPullRequestShas(eventPath);
 
-  assert.deepEqual(result, { base: FIRST_COMMIT, head: SECOND_COMMIT });
+  assert.deepEqual(result, { base: FIRST_COMMIT, head: SECOND_COMMIT, number: 42 });
 
   rmSync(eventPath, { force: true });
+});
+
+test('readPullRequestShas: pull_request.number ausente -> null (mesmo com base/head validos)', () => {
+  const eventPath = writeEventFile({
+    pull_request: {
+      base: { sha: FIRST_COMMIT },
+      head: { sha: SECOND_COMMIT },
+    },
+  });
+
+  assert.equal(readPullRequestShas(eventPath), null);
+
+  rmSync(eventPath, { force: true });
+});
+
+test('readPullRequestShas: pull_request.number invalido (nao-inteiro/negativo/string) -> null', () => {
+  for (const invalidNumber of [1.5, -1, 0, '42', null]) {
+    const eventPath = writeEventFile({
+      pull_request: {
+        number: invalidNumber,
+        base: { sha: FIRST_COMMIT },
+        head: { sha: SECOND_COMMIT },
+      },
+    });
+
+    assert.equal(readPullRequestShas(eventPath), null, `esperava null para number=${JSON.stringify(invalidNumber)}`);
+
+    rmSync(eventPath, { force: true });
+  }
 });
 
 test('readPullRequestShas: GITHUB_EVENT_PATH ausente -> null', () => {
@@ -143,4 +173,19 @@ test('getDiff: argumentos invertidos (head...base) NAO produz o mesmo diff -- co
   // ele mesmo e vazio. Prova objetiva de que `base...head` (nao invertido)
   // e a ordem certa para "o que o head mudou desde que divergiu do base".
   assert.equal(reversed, '');
+});
+
+test('parseGithubRepository: "owner/repo" valido -> {owner, repo}', () => {
+  assert.deepEqual(parseGithubRepository('minha-org/meu-repo'), { owner: 'minha-org', repo: 'meu-repo' });
+});
+
+test('parseGithubRepository: ausente/vazio/mal-formado -> lanca', () => {
+  for (const invalid of [undefined, '', 'sem-barra', 'a/b/c', '/repo', 'owner/']) {
+    assert.throws(() => parseGithubRepository(invalid), `esperava lancar para "${String(invalid)}"`);
+  }
+});
+
+test('buildRunUrl: monta a URL do run completo (nunca de artefato individual)', () => {
+  const url = buildRunUrl('minha-org', 'meu-repo', '123456');
+  assert.equal(url, 'https://github.com/minha-org/meu-repo/actions/runs/123456');
 });
