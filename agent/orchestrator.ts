@@ -10,12 +10,19 @@
  * - roda `git diff <base>...<head>` localmente (nao via API do GitHub --
  *   decisao ja tomada, ver spec 2.2 Ask First) para obter o diff da PR;
  * - encadeia Analise de Area (`area-analysis.ts`) -> Selecao de Testes
- *   (`test-selection.ts`) sobre esse diff;
+ *   (`test-selection.ts`) -> Execucao dos Testes (`test-runner.ts`, Story
+ *   2.3) sobre esse diff;
  * - registra (log estruturado no stdout) inicio da execucao e o resultado
- *   combinado.
+ *   combinado (analise + selecao + execucao).
  *
- * Execucao do Playwright e publicacao de comentario ficam para as stories
- * 2.3/2.4 (fora de escopo aqui).
+ * `runTests` (Story 2.3) nunca lanca por resultado de teste (passe/falhe) --
+ * exit code e caminhos locais viram dado no log combinado. Se lancar, e por
+ * erro real de execucao (config/infra), e propaga normalmente ate o
+ * `main().catch(...)` abaixo, que loga e falha o processo -- mesmo
+ * tratamento de qualquer outro erro do pipeline.
+ *
+ * Publicacao de comentario na PR fica para a Story 2.4 (fora de escopo
+ * aqui).
  *
  * Este arquivo roda via type-stripping nativo do Node (`node agent/orchestrator.ts`),
  * sem `tsc`/`tsx`/`ts-node` e sem passo de build (decisao deliberada, ver spec
@@ -30,6 +37,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyzeAreas } from './area-analysis.ts';
 import { selectTests } from './test-selection.ts';
+import { runTests } from './test-runner.ts';
 
 const CURRENT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(CURRENT_DIR, '..');
@@ -166,15 +174,27 @@ async function main(): Promise<void> {
     testsDir: TESTS_DIR,
   });
 
+  // Roda exatamente o subconjunto selecionado (Story 2.3, AD-3). `runTests`
+  // nunca lanca por resultado de teste -- exit code e caminhos locais sao
+  // apenas dados aqui; o que fazer com um exit code nao-zero fica para o
+  // Epic 3 (comentario da PR).
+  const testRunResult = runTests({
+    selectedTests: testSelectionResult.selectedTests,
+  });
+
   console.log(
     JSON.stringify({
-      event: 'orchestrator_analysis_complete',
+      event: 'orchestrator_run_complete',
       runId: runContext.runId,
       baseSha: shas.base,
       headSha: shas.head,
       areas: areaAnalysisResult.areas,
       selectedTests: testSelectionResult.selectedTests,
       unmappedAreas: testSelectionResult.unmappedAreas,
+      testRunExitCode: testRunResult.exitCode,
+      testResultsDir: testRunResult.testResultsDir,
+      playwrightReportDir: testRunResult.playwrightReportDir,
+      jsonReportPath: testRunResult.jsonReportPath,
       timestamp: new Date().toISOString(),
     }),
   );

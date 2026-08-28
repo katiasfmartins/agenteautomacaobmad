@@ -31,6 +31,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Sobe a aplicacao-exemplo (Story 1.1) antes de qualquer teste rodar
+      # (AD-11): nem o orquestrador (que chama o Test Runner via Playwright,
+      # Story 2.3) nem `agent/test-runner.test.ts` (incluido no glob de
+      # unit tests abaixo) sao responsaveis por subir a app. Health-check
+      # em /login com retries -- nunca assume que o servidor ja esta pronto
+      # so porque o processo foi iniciado em background.
+      - name: Start app
+        run: |
+          # Redireciona stdout/stderr do processo em background para um
+          # arquivo: sem isso, o processo herda os file descriptors do step
+          # e o runner do GitHub Actions pode ficar esperando indefinidamente
+          # por eles fecharem, mesmo apos o script deste step terminar.
+          npm start > app.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/login > /dev/null; then
+              echo "App is up (attempt $i)"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App failed to respond at http://localhost:3000/login within 30s" >&2
+          exit 1
+
       - name: Run unit tests (agent/*.test.ts)
         run: npm run test:unit
 
@@ -38,3 +61,20 @@ jobs:
         run: node agent/orchestrator.ts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      # Upload do artefato e responsabilidade do workflow YAML, nunca de
+      # `test-runner.ts` (AD-3, pureza de I/O). `if: always()` garante que a
+      # evidencia seja publicada mesmo se um step anterior falhar (ex.: erro
+      # real de execucao do Playwright, nao resultado de teste); os
+      # diretorios sempre existem (mesmo vazios) por garantia do proprio
+      # `test-runner.ts`.
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
